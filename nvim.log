@@ -1,0 +1,6 @@
+WRN 2026-11-07T15:40:25.870 ?.72420    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/VW0tmP/nvim.72420.0
+WRN 2026-11-07T15:40:40.813 ?.72424    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/0w80A7/nvim.72424.0
+WRN 2026-11-07T15:40:40.813 ?.72425    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/h5zWpu/nvim.72425.0
+WRN 2026-11-07T15:40:49.276 ?.72426    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/Qr8H2L/nvim.72426.0
+WRN 2026-11-07T15:40:56.610 ?.72430    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/HzBaRA/nvim.72430.0
+WRN 2026-11-07T15:46:43.332 ?.72652    server_start:197: Failed to start server: operation not permitted: /var/folders/sm/s3l2xxr96hq46lvglhwpb0200000gp/T/nvim.sullypalaia/qgDHj3/nvim.72652.0

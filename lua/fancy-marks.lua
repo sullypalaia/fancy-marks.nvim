@@ -1,9 +1,15 @@
 local M = {}
 
+local defaults = {
+  use_default_mappings = true,
+  width = "80%",
+  height = "60%"
+}
+
+local config = vim.deepcopy(defaults)
+
 ---open a new popup with the global and local marks
----@param width string the width of the popup windows (%)
----@param height string the height of the popup windows (%)
-function M.open_window(width, height)
+function M.open_window()
   local source_buf = vim.api.nvim_get_current_buf()
   local source_win = vim.api.nvim_get_current_win()
 
@@ -26,6 +32,10 @@ function M.open_window(width, height)
   local function create_column(title)
     return Popup({
       enter = false,
+      buf_options = {
+        modifiable = false,
+        readonly = true
+      },
       focusable = true,
       border = {
         style = "rounded",
@@ -44,8 +54,8 @@ function M.open_window(width, height)
     relative = "editor",
     position = "50%",
     size = {
-      width = width,
-      height = height,
+      width = config.width,
+      height = config.height,
     },
   }, Layout.Box({
     Layout.Box(left, { size = "50%" }),
@@ -55,7 +65,8 @@ function M.open_window(width, height)
   local function buf_draw_marks(bufnr, marks)
     for _, mark in ipairs(marks) do
       vim.api.nvim_buf_set_lines(bufnr, _ - 1, _, false,
-        { string.format("name: %s | row: %d | col: %d | filename: %s", mark.mark, mark.pos[1], mark.pos[2], mark.file) })
+        { string.format("name: %s | row: %d | col: %d | filename: %s", mark.mark, mark.pos[2], mark.pos[3],
+          mark.file or "(global)") })
     end
   end
 
@@ -100,9 +111,9 @@ function M.open_window(width, height)
       local cursor_pos = vim.api.nvim_win_get_cursor(win.winid)
       local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
       local mark_name = mark_line:match("name: '([A-Za-z])")
-      layout:unmount()
 
-      if (vim.api.nvim_win_is_valid(source_win)) then
+      if (mark_name and vim.api.nvim_win_is_valid(source_win)) then
+        layout:unmount()
         vim.api.nvim_set_current_win(source_win)
         vim.api.nvim_set_current_buf(source_buf)
         vim.cmd("normal! m'")
@@ -114,17 +125,10 @@ end
 
 ---@param opts {use_default_mappings: boolean, width: number, height: number} options
 function M.setup(opts)
-  local default_opts = {
-    use_default_mappings = true,
-    width = "80%",
-    height = "60%"
-  }
+  config = vim.tbl_deep_extend("force", defaults, opts or {})
 
-  --merge the default options with user-provided options
-  opts = vim.tbl_deep_extend("force", default_opts, opts or {})
-
-  if opts.use_default_mappings == true then
-    vim.keymap.set("n", "<Leader>mo", function() M.open_window(opts.width, opts.height) end,
+  if config.use_default_mappings == true then
+    vim.keymap.set("n", "<Leader>mo", function() M.open_window() end,
       { desc = "open fancy marks window" })
   end
 end
