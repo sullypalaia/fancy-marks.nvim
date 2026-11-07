@@ -1,26 +1,18 @@
 local M = {}
 
----get global marks (uppercase)
----@return vim.fn.getmarklist.ret.item[] marks
-function M.get_global_marks()
-  return vim.tbl_filter(function(mark)
-    return mark.mark:match("^'[A-Z]$") ~= nil
-  end, vim.fn.getmarklist())
-end
-
----get marks local to specified buffer (lowercase)
----@param bufnr? integer Buffer number; defaults to the current buffer.
----@return vim.fn.getmarklist.ret.item[] marks
-function M.get_local_marks(bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-
-  return vim.tbl_filter(function(mark)
-    return mark.mark:match("^'[a-z]$") ~= nil
-  end, vim.fn.getmarklist(bufnr))
-end
 
 ---open a new popup with the global and local marks
 function M.open()
+  local global_marks = vim.tbl_filter(function(mark)
+    return mark.mark:match("^'[A-Z]$") ~= nil
+  end, vim.fn.getmarklist())
+
+  local buf = vim.api.nvim_get_current_buf()
+
+  local local_marks = vim.tbl_filter(function(mark)
+    return mark.mark:match("^'[a-z]$") ~= nil
+  end, vim.fn.getmarklist(buf))
+
   local Popup = require("nui.popup")
   local Layout = require("nui.layout")
 
@@ -55,6 +47,18 @@ function M.open()
     Layout.Box(left, { size = "50%" }),
     Layout.Box(right, { size = "50%" }),
   }, { dir = "row" }))
+
+  local function buf_draw_marks(bufnr, marks)
+    for _, mark in ipairs(marks) do
+      vim.api.nvim_buf_set_lines(bufnr, _ - 1, _, false, { mark.mark })
+    end
+  end
+
+  --draw local marks
+  buf_draw_marks(left.bufnr, global_marks)
+
+  --draw global marks
+  buf_draw_marks(right.bufnr, local_marks)
 
   layout:mount()
   vim.api.nvim_set_current_win(left.winid)
