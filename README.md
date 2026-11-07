@@ -10,7 +10,5 @@ Assuming the plugin is in the _runtimepath_, the setup function can be called wi
 
 ## TODO
 
-- add mark locations in popup window
-- add way to jump to marks from popup window
 - add way to delete marks from popup window
 - add overlay with toggle

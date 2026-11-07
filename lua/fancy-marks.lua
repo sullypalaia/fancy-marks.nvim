@@ -1,8 +1,12 @@
 local M = {}
 
-
 ---open a new popup with the global and local marks
-function M.open()
+---@param width string the width of the popup windows (%)
+---@param height string the height of the popup windows (%)
+function M.open_window(width, height)
+  local source_buf = vim.api.nvim_get_current_buf()
+  local source_win = vim.api.nvim_get_current_win()
+
   local global_marks = vim.tbl_filter(function(mark)
     return mark.mark:match("^'[A-Z]$") ~= nil
   end, vim.fn.getmarklist())
@@ -40,8 +44,8 @@ function M.open()
     relative = "editor",
     position = "50%",
     size = {
-      width = "80%",
-      height = "60%",
+      width = width,
+      height = height,
     },
   }, Layout.Box({
     Layout.Box(left, { size = "50%" }),
@@ -50,7 +54,8 @@ function M.open()
 
   local function buf_draw_marks(bufnr, marks)
     for _, mark in ipairs(marks) do
-      vim.api.nvim_buf_set_lines(bufnr, _ - 1, _, false, { mark.mark })
+      vim.api.nvim_buf_set_lines(bufnr, _ - 1, _, false,
+        { string.format("name: %s | row: %d | col: %d | filename: %s", mark.mark, mark.pos[1], mark.pos[2], mark.file) })
     end
   end
 
@@ -60,20 +65,67 @@ function M.open()
   --draw global marks
   buf_draw_marks(right.bufnr, local_marks)
 
+  --mount the layout
   layout:mount()
+
+  --focus the window
   vim.api.nvim_set_current_win(left.winid)
+
+  --quit the window with q
+  for _, win in ipairs({ left, right }) do
+    vim.keymap.set("n", "q", function()
+      layout:unmount()
+    end, { buffer = win.bufnr, desc = "close fancy marks window" })
+  end
+
+  --disable <C-w> + kjlh
+  for _, key in ipairs({ "k", "j", "l", "h" }) do
+    vim.keymap.set("n", "<C-w>" .. key, function() end, { buffer = left.bufnr })
+    vim.keymap.set("n", "<C-w>" .. key, function() end, { buffer = right.bufnr })
+  end
+
+  --use <C-w> + h to switch to the left window
+  vim.keymap.set("n", "<C-w>h", function()
+    vim.api.nvim_set_current_win(left.winid)
+  end, { buffer = right.bufnr })
+
+  --use <C-w> + l to switch to the right window
+  vim.keymap.set("n", "<C-w>l", function()
+    vim.api.nvim_set_current_win(right.winid)
+  end, { buffer = left.bufnr })
+
+  ---use <CR> to jump to a specific mark
+  for _, win in ipairs({ left, right }) do
+    vim.keymap.set("n", "<CR>", function()
+      local cursor_pos = vim.api.nvim_win_get_cursor(win.winid)
+      local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
+      local mark_name = mark_line:match("name: '([A-Za-z])")
+      layout:unmount()
+
+      if (vim.api.nvim_win_is_valid(source_win)) then
+        vim.api.nvim_set_current_win(source_win)
+        vim.api.nvim_set_current_buf(source_buf)
+        vim.cmd("normal! m'")
+        vim.cmd("normal! `" .. mark_name)
+      end
+    end, { buffer = win.bufnr })
+  end
 end
 
----@param opts table: options for the fancy marks window
+---@param opts {use_default_mappings: boolean, width: number, height: number} options
 function M.setup(opts)
-  local popup = require("nui.popup")
-
   local default_opts = {
-    use_default_mappings = true
+    use_default_mappings = true,
+    width = "80%",
+    height = "60%"
   }
 
-  if default_opts then
-    vim.keymap.set("n", "<Leader>mo", function() M.open() end, { desc = "open fancy marks window" })
+  --merge the default options with user-provided options
+  opts = vim.tbl_deep_extend("force", default_opts, opts or {})
+
+  if opts.use_default_mappings == true then
+    vim.keymap.set("n", "<Leader>mo", function() M.open_window(opts.width, opts.height) end,
+      { desc = "open fancy marks window" })
   end
 end
 
