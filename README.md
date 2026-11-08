@@ -20,3 +20,7 @@ Assuming the plugin is in the _runtimepath_, the setup function can be called wi
 ## TODO
 
 - add overlay with toggle
+
+## Note
+
+This plugin is an excercise in developing Neovim plugins in Lua. There are much better alternatives for managing marks in Neovim. However, this can function as a useful lightweight plugin for simple mark management.
