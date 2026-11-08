@@ -2,7 +2,7 @@
 
 ## Overview
 
-This plugin is designed to provide a way to view and jump to marks in Neovim, as well as highlight them when an overlay is enabled.
+This plugin is designed to provide a way to view; jump to; and delete marks in Neovim, as well as highlight them when an overlay is enabled.
 
 ## Features
 
@@ -19,5 +19,4 @@ Assuming the plugin is in the _runtimepath_, the setup function can be called wi
 
 ## TODO
 
-- add way to delete marks from popup window
 - add overlay with toggle

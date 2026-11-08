@@ -33,8 +33,7 @@ function M.open_window()
     return Popup({
       enter = false,
       buf_options = {
-        modifiable = false,
-        readonly = true
+        modifiable = false
       },
       focusable = true,
       border = {
@@ -112,7 +111,8 @@ function M.open_window()
       local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
       local mark_name = mark_line:match("name: '([A-Za-z])")
 
-      if (mark_name and vim.api.nvim_win_is_valid(source_win)) then
+      --unmount layout and jump to the mark if it exists
+      if mark_name and vim.api.nvim_win_is_valid(source_win) then
         layout:unmount()
         vim.api.nvim_set_current_win(source_win)
         vim.api.nvim_set_current_buf(source_buf)
@@ -121,12 +121,40 @@ function M.open_window()
       end
     end, { buffer = win.bufnr })
   end
+
+  --use x to delete a mark
+  for _, win in ipairs({ left, right }) do
+    vim.keymap.set("n", "x", function()
+      local cursor_pos = vim.api.nvim_win_get_cursor(win.winid)
+      local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
+      local mark_name = mark_line:match("name: '([A-Za-z])")
+
+      if mark_name then
+        vim.api.nvim_set_current_buf(source_buf)
+        vim.cmd("delmarks " .. mark_name)
+        vim.api.nvim_set_current_buf(win.bufnr)
+
+        --temporary set the buffer to modifiable to remove the line
+        vim.bo[win.bufnr].modifiable = true
+
+        --remove the line
+        vim.api.nvim_buf_set_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false, {})
+
+        vim.bo[win.bufnr].modifiable = false
+
+        vim.notify("removed mark " .. mark_name .. " in buffer " .. source_buf, vim.log.levels.INFO,
+          { title = "fancy-marks" })
+      end
+    end, { buf = win.bufnr })
+  end
 end
 
 ---@param opts {use_default_mappings: boolean, width: number, height: number} options
 function M.setup(opts)
+  --merge  user-defined opts with defaults
   config = vim.tbl_deep_extend("force", defaults, opts or {})
 
+  --default keymaps
   if config.use_default_mappings == true then
     vim.keymap.set("n", "<Leader>mo", function() M.open_window() end,
       { desc = "open fancy marks window" })
