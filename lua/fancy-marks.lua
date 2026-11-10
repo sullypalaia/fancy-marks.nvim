@@ -2,6 +2,7 @@ local M = {}
 
 local defaults = {
   use_default_mappings = true,
+  num_lines_preview = 5,
   width = "80%",
   height = "60%"
 }
@@ -147,9 +148,73 @@ function M.open_window()
       end
     end, { buf = win.bufnr })
   end
+
+  local preview_popup = Popup({
+    relative = "cursor",
+    position = { row = 1, col = 1 },
+    size = { width = 40, height = 10 },
+    enter = false,
+    focusable = false,
+    border = { style = "rounded" },
+    zindex = 60
+  })
+
+  --preview when hovering over a mark
+  for _, win in ipairs({ left, right }) do
+    vim.api.nvim_create_autocmd("CursorMoved", {
+      callback = function()
+        --grab lines around the mark
+        local cursor_pos = vim.api.nvim_win_get_cursor(win.winid)
+        local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
+        if not mark_line then return end
+        local mark_name = mark_line:match("name: '([A-Za-z])")
+        if not mark_name then
+          --if no mark is found and the preview is already mounted, then unmount it
+          if preview_popup.winid and vim.api.nvim_win_is_valid(preview_popup.winid) then
+            preview_popup:unmount()
+          end
+          return
+        end
+
+        preview_popup:mount()
+
+        --jump to the mark in the source buffer to get the lines
+        vim.api.nvim_set_current_buf(source_buf)
+        vim.cmd("normal! m'")
+        vim.cmd("normal! `" .. mark_name)
+
+        --get the lines
+        local mark_pos = vim.api.nvim_win_get_cursor(win.winid)
+        local target_buf = vim.api.nvim_get_current_buf()
+
+        --set filetype for the preview popup
+        vim.bo[preview_popup.bufnr].filetype = vim.bo[source_buf].filetype
+
+        local start_line = math.max(mark_pos[1] - 1 - config.num_lines_preview, 0)
+        local end_line = mark_pos[1] + config.num_lines_preview
+        local lines = vim.api.nvim_buf_get_lines(target_buf, start_line, end_line, false)
+
+        vim.api.nvim_set_current_buf(win.bufnr)
+        vim.api.nvim_buf_set_lines(preview_popup.bufnr, 0, -1, false, lines)
+      end,
+      buf = win.bufnr
+    })
+  end
+
+  --stop preview when leaving the window
+  for _, win in ipairs({ left, right }) do
+    vim.api.nvim_create_autocmd("WinLeave", {
+      callback = function()
+        if preview_popup.winid and vim.api.nvim_win_is_valid(preview_popup.winid) then
+          preview_popup:unmount()
+        end
+      end,
+      buf = win.bufnr
+    })
+  end
 end
 
----@param opts {use_default_mappings: boolean, width: number, height: number} options
+---@param opts {use_default_mappings: boolean, num_lines_preview: number, width: number, height: number} options
 function M.setup(opts)
   --merge  user-defined opts with defaults
   config = vim.tbl_deep_extend("force", defaults, opts or {})

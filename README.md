@@ -2,16 +2,17 @@
 
 ## Overview
 
-This plugin is designed to provide a way to view; jump to; and delete marks in Neovim, as well as highlight them when an overlay is enabled.
+This plugin is designed to provide a way to view; jump to; and delete marks in Neovim.
 
 ## Features
 
 Through `opts`, you can configure features:
 - `use_default_mappings`: whether to use the default key mappings (default: true)
+- `num_lines_preview`: the number of lines to show in the preview window (default: 5)
 - `width`: the width of the popup window (default: "80%")
 - `height`: the height of the popup window (default: "60%")
 
-Open the window with `require("fancy-marks").open_window()`. The window will display a list of actives global and local marks. Use <CR> on a mark to jump to it.
+Open the window with `require("fancy-marks").open_window()`. The window will display a list of actives global and local marks. Use <CR> on a mark to jump to it. When the cursor is on a mark, a preview window will show lines surrounding a mark.
 
 ## Installation
 
