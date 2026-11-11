@@ -168,7 +168,22 @@ function M.open_window()
         local mark_line = vim.api.nvim_buf_get_lines(win.bufnr, cursor_pos[1] - 1, cursor_pos[1], false)[1]
         if not mark_line then return end
         local mark_name = mark_line:match("name: '([A-Za-z])")
-        if not mark_name then
+        local target_buf = source_buf
+        local mark_pos
+        if mark_name then
+          if mark_name:match("[A-Z]") then
+            mark_pos = vim.api.nvim_get_mark(mark_name, {})
+            target_buf = mark_pos[3]
+            if target_buf == 0 and mark_pos[4] ~= "" then
+              target_buf = vim.fn.bufadd(mark_pos[4])
+            end
+          else
+            mark_pos = vim.api.nvim_buf_get_mark(source_buf, mark_name)
+          end
+          if target_buf ~= 0 then vim.fn.bufload(target_buf) end
+        end
+        if not mark_pos or target_buf == 0 or mark_pos[1] < 1
+            or mark_pos[1] > vim.api.nvim_buf_line_count(target_buf) then
           --if no mark is found and the preview is already mounted, then unmount it
           if preview_popup.winid and vim.api.nvim_win_is_valid(preview_popup.winid) then
             preview_popup:unmount()
@@ -178,23 +193,13 @@ function M.open_window()
 
         preview_popup:mount()
 
-        --jump to the mark in the source buffer to get the lines
-        vim.api.nvim_set_current_buf(source_buf)
-        vim.cmd("normal! m'")
-        vim.cmd("normal! `" .. mark_name)
-
-        --get the lines
-        local mark_pos = vim.api.nvim_win_get_cursor(win.winid)
-        local target_buf = vim.api.nvim_get_current_buf()
-
         --set filetype for the preview popup
-        vim.bo[preview_popup.bufnr].filetype = vim.bo[source_buf].filetype
+        vim.bo[preview_popup.bufnr].filetype = vim.bo[target_buf].filetype
 
         local start_line = math.max(mark_pos[1] - 1 - config.num_lines_preview, 0)
         local end_line = mark_pos[1] + config.num_lines_preview
         local lines = vim.api.nvim_buf_get_lines(target_buf, start_line, end_line, false)
 
-        vim.api.nvim_set_current_buf(win.bufnr)
         vim.api.nvim_buf_set_lines(preview_popup.bufnr, 0, -1, false, lines)
       end,
       buf = win.bufnr
